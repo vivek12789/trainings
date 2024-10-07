@@ -1,0 +1,218 @@
+package com.elliemae.services.svcsettings.data;
+
+import com.elliemae.services.svcsettings.business.OrderType;
+import com.elliemae.services.svcsettings.data.entity.ServiceSetup;
+import com.querydsl.core.types.Predicate;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.repository.EntityGraph;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.querydsl.QuerydslPredicateExecutor;
+import org.springframework.stereotype.Repository;
+
+/** Interface for Service setup repository. */
+@Repository
+public interface ServiceSetupRepository
+    extends JpaRepository<ServiceSetup, String>, QuerydslPredicateExecutor<ServiceSetup> {
+
+  ServiceSetup save(ServiceSetup entity);
+
+  /**
+   * Find by is active and order type in list.
+   *
+   * @param isActive the is active
+   * @param orderType the order type
+   * @return the list
+   */
+  @EntityGraph(value = "ServiceSetup.view-default")
+  List<ServiceSetup> findByIsActiveAndOrderTypeIn(boolean isActive, List<OrderType> orderType);
+
+  /**
+   * Find by svc setup id in list.
+   *
+   * @param serviceSetupId the service setup id
+   * @return the list
+   */
+  List<ServiceSetup> findByIdIn(List<String> serviceSetupId);
+
+  /**
+   * Find svc setup id optional.
+   *
+   * @param serviceSetupId the service setup id
+   * @return the optional
+   */
+  Optional<ServiceSetup> findOptionalById(String serviceSetupId);
+
+  /**
+   * Find by order type and is active list.
+   *
+   * @param orderType the order type
+   * @param isActive the is active
+   * @return the list
+   */
+  List<ServiceSetup> findByOrderTypeAndIsActive(OrderType orderType, boolean isActive);
+
+  /**
+   * Find by order type and category order by rank asc .
+   *
+   * @param orderType the order type
+   * @param category the category
+   * @return the optional
+   */
+  @Query(
+      value =
+          "select ss.* from service_setup ss where ss.order_type=?1 and ss.category=?2 and ss.instance_id=TRIM(?3) "
+              + "and ss.access_type= ?4 order by ss.rank asc",
+      nativeQuery = true)
+  List<ServiceSetup> findByOrderTypeAndCategoryAndInstanceIdAndAccessTypeOrderByRankAsc(
+      String orderType, String category, String instanceId, String accessType);
+
+  /**
+   * Find by order type and is active and providerId.
+   *
+   * @param orderType the order type
+   * @param isActive the is active
+   * @param providerId providerId
+   * @return the list
+   */
+  List<ServiceSetup> findByOrderTypeAndIsActiveAndProviderId(
+      OrderType orderType, boolean isActive, String providerId);
+
+  /**
+   * Find by order type and category and is active and providerId.
+   *
+   * @param orderType
+   * @param category
+   * @param isActive
+   * @param providerId
+   * @return
+   */
+  List<ServiceSetup> findByOrderTypeAndCategoryAndIsActiveAndProviderId(
+      OrderType orderType, String category, boolean isActive, String providerId);
+
+  /**
+   * Find by order type, category and providerId.
+   *
+   * @param orderType orderType
+   * @param category category
+   * @param providerId providerId
+   * @return list service setups
+   */
+  List<ServiceSetup> findByOrderTypeAndCategoryAndProviderId(
+      OrderType orderType, String category, String providerId);
+
+  /**
+   * Find by provider id.
+   *
+   * @param providerId the provider id
+   * @return the optional
+   */
+  List<ServiceSetup> findByProviderIdIgnoreCaseAndIsActive(String providerId, boolean isActive);
+
+  /**
+   * @param providerId providerId
+   * @param isActive get active service setups
+   * @param orderTypes list of order types
+   * @return list of service setups
+   */
+  @EntityGraph(value = "ServiceSetup.view-default")
+  List<ServiceSetup> findByProviderIdAndIsActiveAndOrderTypeIn(
+      String providerId, Boolean isActive, List<OrderType> orderTypes);
+
+  /**
+   * @param providerId providerId
+   * @param isActive get active service setups
+   * @return list of service setups
+   */
+  @EntityGraph(value = "ServiceSetup.view-default")
+  List<ServiceSetup> findByProviderIdAndIsActive(String providerId, Boolean isActive);
+
+  void delete(ServiceSetup entity);
+
+  /**
+   * Find optional svc setup id and active flag.
+   *
+   * @param serviceSetupId the service setup id
+   * @param isActive active service setup id
+   * @return the optional
+   */
+  @EntityGraph(value = "ServiceSetup.view-default")
+  ServiceSetup findByIdAndIsActive(String serviceSetupId, boolean isActive);
+
+  /**
+   * find service setup by id
+   *
+   * @param id service setup id
+   * @return ServiceSetup
+   */
+  Optional<ServiceSetup> findById(String id);
+
+  /**
+   * Find all service setups by instance id, active and access type for compact view.
+   *
+   * @param isActive the is active
+   * @return the list
+   */
+  @EntityGraph(value = "ServiceSetup.view-compact")
+  List<ServiceSetup> findByIsActive(boolean isActive);
+
+  @EntityGraph(value = "ServiceSetup.view-default")
+  List<ServiceSetup> findAll(Predicate predicate, Sort sort);
+
+  @EntityGraph(value = "ServiceSetup.view-default")
+  List<ServiceSetup> findAll();
+
+  @EntityGraph(value = "ServiceSetup.view-compact")
+  List<ServiceSetup> findAll(Predicate predicate);
+
+  @Modifying
+  @Query(value = "CALL update_service_setup_rank(?1, ?2, ?3, ?4, ?5)", nativeQuery = true)
+  void batchUpdateRank(
+      Integer rank, String orderType, String category, String instanceId, String accessType);
+
+  /**
+   * return service setup response for given provider level
+   *
+   * @param accessType accessType
+   * @param instanceId instanceId
+   * @param providerId providerId
+   * @param isActive isActive
+   * @return list of service setup with user_set
+   */
+  @Query(value = "select * from fn_find_service_setups(?1, ?2, ?3, ?4)", nativeQuery = true)
+  List<Map<String, String>> findServiceSetups(
+      String accessType, String instanceId, String providerId, boolean isActive);
+
+  /**
+   * return service setup response for given filters
+   *
+   * @param serviceSetId serviceSetId
+   * @param accessType accessType
+   * @param instanceId instanceId
+   * @param isActive isActive
+   * @param providerId providerId
+   * @param orderTypes orderTypes
+   * @param categories categories
+   * @param requestTypes requestTypes
+   * @return List of ServiceSetups
+   */
+  @SuppressWarnings("squid:S00107")
+  @Query(
+      value =
+          "select * from fn_find_service_setups(CAST(:serviceSetId AS TEXT), CAST(:accessType AS TEXT), CAST(:instanceId AS TEXT), :isActive, "
+              + "CAST(:providerId AS TEXT), svc_settings.fn_list_to_array(:orderTypes), svc_settings.fn_list_to_array(:categories), CAST(:requestTypes AS TEXT))",
+      nativeQuery = true)
+  List<ServiceSetup> findServiceSetups(
+      String serviceSetId,
+      String accessType,
+      String instanceId,
+      Boolean isActive,
+      String providerId,
+      List<String> orderTypes,
+      List<String> categories,
+      String requestTypes);
+}
